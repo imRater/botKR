@@ -406,11 +406,11 @@ async def process_donate_press(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main"))
     
     await callback.message.edit_text(
-        text, 
-        reply_markup=builder.as_markup(), 
-        parse_mode="Markdown", 
-        disable_web_page_preview=True
-    )
+    text, 
+    reply_markup=builder.as_markup(), 
+    parse_mode="HTML",  # <--- Змінюємо тут
+    disable_web_page_preview=True
+)
 
 # 3. ОБРОБКА КНОПКИ НАЗАД (виправлено)
 @dp.callback_query(F.data == "back_to_main")
