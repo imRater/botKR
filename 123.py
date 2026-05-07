@@ -12,7 +12,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-DB_URL = "postgresql://postgres:221221poN!_123@db.eihoehyavwdurhyrlxwq.supabase.co:5432/postgres"
+DB_URL = "postgresql://postgres:221221poN!_123@db.eihoehyavwdurhyrlxwq.supabase.co:6543/postgres"
 
 # --- КОНФИГУРАЦИЯ ---
 TOKEN = os.getenv("BOT_TOKEN") # ЗАМЕНИ НА НОВЫЙ!
