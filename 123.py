@@ -3,6 +3,7 @@ import os
 import asyncpg
 import re
 import aiohttp
+from aiogram.filters import Command # Добавь этот импорт в начало файла
 from aiohttp import web
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
