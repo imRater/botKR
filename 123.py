@@ -375,17 +375,23 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     await state.set_state(Form.adm_comp_proofs)
     
 @dp.message(commands=['donate'])
-async def donate_cmd(message: types.Message):
+async def donate_handler(message: types.Message):
+    # Створюємо кнопку-посилання
+    buttons = [
+        [types.InlineKeyboardButton(text="💸 Підтримати проект", url="https://donatello.to/Kyiv_region")]
+    ]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Текст повідомлення
     text = (
-        "👋 Бажаєте підтримати наш проект?\n\n"
-        "Ваші донати допомагають нам розвивати сервер, "
-        "покращувати хостинг та додавати новий контент!\n\n"
-        "📌 Нік для підтримки(Роблокс): `SANTAFASD`\n"
-        "🔗 Donatello: [donatello.to/Kyiv_region](https://donatello.to/Kyiv_region)\n\n"
-        "Дякуємо, що ви з нами! ❤️"
+        "👋 **Бажаєте підтримати наш проект?**\n\n"
+        "Ваші внески допомагають нам ставати кращими!\n\n"
+        "📌 Нік для підтримки(Роблокс): `SANTAFASD` (натисни, щоб скопіювати)\n"
+        "🔗 Donatello: https://donatello.to/Kyiv_region\n\n"
+        "Дякуємо за допомогу! ❤️"
     )
-    await message.answer(text, parse_mode="Markdown", disable_web_page_preview=True)
-    
+
+    await message.answer(text, reply_markup=keyboard, parse_mode="Markdown")
 @dp.message(Form.adm_comp_proofs)
 async def adm_comp_final(message: types.Message, state: FSMContext):
     data = await state.get_data()
