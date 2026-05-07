@@ -375,7 +375,7 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     await message.answer("3. Надішліть докази (фото, відео або посилання):")
     await state.set_state(Form.adm_comp_proofs)
     
-@dp.message(commands=['donate'])
+@dp.message(Command("donate"))
 async def donate_handler(message: types.Message):
     # Створюємо кнопку-посилання
     buttons = [
