@@ -431,25 +431,26 @@ async def start_webserver():
     print(f"Web server started on port {port}")
 
 async def main():
-    # 1. Запускаем веб-сервер ПЕРВЫМ
     await start_webserver()
     
-    # 2. Подключаемся к базе и создаем таблицу
-    conn = await asyncpg.connect(DB_URL)
-    await conn.execute('''
-        CREATE TABLE IF NOT EXISTS bans (
-            nick TEXT PRIMARY KEY,
-            expiry TEXT,
-            reason TEXT,
-            admin TEXT
-        )
-    ''')
-    await conn.close()
+    try:
+        conn = await asyncpg.connect(DB_URL)
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS bans (
+                nick TEXT PRIMARY KEY,
+                expiry TEXT,
+                reason TEXT,
+                admin TEXT
+            )
+        ''')
+        await conn.close()
+        print("База данных подключена успешно!")
+    except Exception as e:
+        print(f"ОШИБКА БАЗЫ ДАННЫХ: {e}")
+        # Не выходим из приложения, даем веб-серверу работать, 
+        # чтобы Render не убил процесс сразу
     
     print("Бот запущен!")
-    
-    # 3. Запускаем лонг-поллинг
-    # Удаляем вебхуки на всякий случай перед запуском
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
