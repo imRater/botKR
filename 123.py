@@ -150,11 +150,25 @@ async def ban_3(message: types.Message, state: FSMContext):
 @dp.message(Form.ban_reason)
 async def ban_4(message: types.Message, state: FSMContext):
     d = await state.get_data()
-    conn = await asyncpg.connect(DB_URL)
-    await conn.execute("INSERT INTO bans VALUES ($1,$2,$3,$4) ON CONFLICT (nick) DO UPDATE SET expiry=$2, reason=$3, admin=$4", 
-                       d['n'], d['t'], message.text, message.from_user.username)
-    await conn.close()
-    await message.answer(f"✅ {d['n']} забанений.", reply_markup=main_kb(message.from_user.id))
+    reason_text = message.text
+    admin_name = message.from_user.username or "Unknown"
+    
+    try:
+        conn = await asyncpg.connect(DB_URL)
+        # Явно указываем колонки (nick, expiry, reason, admin)
+        await conn.execute("""
+            INSERT INTO bans (nick, expiry, reason, admin) 
+            VALUES ($1, $2, $3, $4) 
+            ON CONFLICT (nick) 
+            DO UPDATE SET expiry=$2, reason=$3, admin=$4
+        """, d['n'], d['t'], reason_text, admin_name)
+        
+        await conn.close()
+        await message.answer(f"✅ Користувач {d['n']} успішно забанений.", reply_markup=main_kb(message.from_user.id))
+    except Exception as e:
+        print(f"Ошибка записи бана: {e}")
+        await message.answer("❌ Не вдалося зберегти бан в базі.")
+        
     await state.clear()
 
 # --- НОВАЯ ЛОГИКА РАЗБАНА (ИСПРАВЛЕНО) ---
@@ -192,29 +206,37 @@ async def check_start(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Form.check_nick)
     await callback.answer()
 
-@dp.message(Form.check_nick)
+@@dp.message(Form.check_nick)
 async def check_proc(message: types.Message, state: FSMContext):
-    nick = message.text.lower()
-    conn = await asyncpg.connect(DB_URL)
-    res = await conn.fetchrow("SELECT * FROM bans WHERE nick=$1", nick)
-    
-    if res:
-        # Проверка срока (если не перманентный)
-        if res['expiry'] != "permanent":
-            try:
-                expiry_dt = datetime.fromisoformat(res['expiry'])
-                if datetime.now() > expiry_dt:
-                    await conn.execute("DELETE FROM bans WHERE nick=$1", nick)
-                    res = None
-            except:
-                pass
+    nick = message.text.lower().strip()
+    try:
+        conn = await asyncpg.connect(DB_URL)
+        res = await conn.fetchrow("SELECT * FROM bans WHERE nick=$1", nick)
+        
+        if res:
+            # Получаем данные по именам колонок
+            reason = res['reason']
+            expiry = res['expiry']
+            
+            if expiry != "permanent":
+                try:
+                    expiry_dt = datetime.fromisoformat(expiry)
+                    if datetime.now() > expiry_dt:
+                        await conn.execute("DELETE FROM bans WHERE nick=$1", nick)
+                        await conn.close()
+                        return await message.answer(f"✅ Термін бану гравця {nick} минув. Його розбанено.")
+                except Exception as e:
+                    print(f"Ошибка даты: {e}")
 
-    if res:
-        await message.answer(f"🚫 Гравець {nick} в бані.\nПричина: {res['reason']}")
-    else:
-        await message.answer("✅ Бан не знайдено.")
+            await message.answer(f"🚫 Гравець {nick} в бані.\nПричина: {reason}")
+        else:
+            await message.answer("✅ Бан не знайдено.")
+        
+        await conn.close()
+    except Exception as e:
+        print(f"Ошибка поиска: {e}")
+        await message.answer("❌ Помилка при зверненні до бази даних.")
     
-    await conn.close()
     await state.clear()
 
 # --- СКАРГИ ---
