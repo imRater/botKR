@@ -195,18 +195,26 @@ async def check_start(callback: types.CallbackQuery, state: FSMContext):
 @dp.message(Form.check_nick)
 async def check_proc(message: types.Message, state: FSMContext):
     nick = message.text.lower()
-    conn = sqlite3.connect("project.db"); c = conn.cursor()
-    c.execute("SELECT * FROM bans WHERE nick=?", (nick,))
-    res = c.fetchone()
-    if res and res[1] != "permanent" and datetime.now() > datetime.fromisoformat(res[1]):
-        c.execute("DELETE FROM bans WHERE nick=?", (nick,))
-        conn.commit(); res = None
-    conn.close()
+    conn = await asyncpg.connect(DB_URL)
+    res = await conn.fetchrow("SELECT * FROM bans WHERE nick=$1", nick)
     
     if res:
-        await message.answer(f"🚫 Гравець {nick} в бані.\nПричина: {res[2]}")
+        # Проверка срока (если не перманентный)
+        if res['expiry'] != "permanent":
+            try:
+                expiry_dt = datetime.fromisoformat(res['expiry'])
+                if datetime.now() > expiry_dt:
+                    await conn.execute("DELETE FROM bans WHERE nick=$1", nick)
+                    res = None
+            except:
+                pass
+
+    if res:
+        await message.answer(f"🚫 Гравець {nick} в бані.\nПричина: {res['reason']}")
     else:
         await message.answer("✅ Бан не знайдено.")
+    
+    await conn.close()
     await state.clear()
 
 # --- СКАРГИ ---
