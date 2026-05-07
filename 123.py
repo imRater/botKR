@@ -323,7 +323,7 @@ async def comp_final(message: types.Message, state: FSMContext):
         print(f"Ошибка отправки: {e}")
 
     await state.clear()
-
+    
 # --- ЦЕПОЧКА АПЕЛЛЯЦІЇ ---
 @dp.message(Form.app_place)
 async def app_1(message: types.Message, state: FSMContext):
