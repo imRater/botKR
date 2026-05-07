@@ -250,7 +250,7 @@ async def check_proc(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data == "btn_complaint")
 async def start_complaint(callback: types.CallbackQuery, state: FSMContext):
     await state.clear() 
-    await callback.message.answer("📝 **Скарга на гравця**\n1. Введіть нік порушника:")
+    await callback.message.answer("📝 Скарга на гравця\n1. Введіть нік порушника:")
     await state.set_state(Form.comp_target_nick) # Переконайся, що це є в Form
     await callback.answer()
 
@@ -285,12 +285,12 @@ async def comp_final(message: types.Message, state: FSMContext):
     user_nick = message.text
     
     caption = (
-        f"📩 **НОВА СКАРГА**\n"
+        f"📩 НОВА СКАРГА\n"
         f"👤 Від: {message.from_user.mention_html()}\n\n"
-        f"1️⃣ **Нік порушника:** {user_data.get('target_nick')}\n"
-        f"2️⃣ **Порушення:** {user_data.get('violation')}\n"
-        f"3️⃣ **Докази:** {user_data.get('proofs_text')}\n"
-        f"4️⃣ **Нік заявника:** {user_nick}"
+        f"1️⃣ Нік порушника: {user_data.get('target_nick')}\n"
+        f"2️⃣ Порушення: {user_data.get('violation')}\n"
+        f"3️⃣ Докази: {user_data.get('proofs_text')}\n"
+        f"4️⃣ Нік заявника {user_nick}"
     )
     
     kb = InlineKeyboardBuilder()
@@ -321,7 +321,7 @@ async def comp_final(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data == "btn_appeal")
 async def start_appeal(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.answer("⚖️ **Апеляція**\n1. Де було видано покарання? (Роблокс або Телеграм):")
+    await callback.message.answer("⚖️ Апеляція\n1. Де було видано покарання? (Роблокс або Телеграм):")
     await state.set_state(Form.app_place)
     await callback.answer()
 
