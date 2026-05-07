@@ -243,36 +243,66 @@ async def check_proc(message: types.Message, state: FSMContext):
 
 # --- СКАРГИ ---
 # --- ВХОД В ФОРМЫ ---
+# --- ЛАНЦЮЖОК СКАРГИ ---
+
+# 1. Початок: запитуємо нік порушника
 @dp.callback_query(F.data.in_(["btn_complaint", "btn_appeal"]))
 async def start_player_form(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "btn_complaint":
-        await callback.message.answer("📝 Скарга на гравця\n1. Введіть нік порушника:")
+        await callback.message.answer("📝 **Скарга на гравця**\n1. Введіть нік порушника:")
         await state.set_state(Form.comp_target_nick)
     else:
-        await callback.message.answer("⚖️ Апеляція\n1. Де було видано покарання? (Роблокс або Телеграм):")
+        await callback.message.answer("⚖️ **Апеляція**\n1. Де було видано покарання? (Роблокс або Телеграм):")
         await state.set_state(Form.app_place)
     await callback.answer()
 
-# --- ЦЕПОЧКА СКАРГИ ---
+# 2. Отримуємо нік порушника -> запитуємо суть порушення
+@dp.message(Form.comp_target_nick)
+async def process_comp_target(message: types.Message, state: FSMContext):
+    await state.update_data(target_nick=message.text)
+    await message.answer("2. Опишіть, що саме порушив гравець:")
+    await state.set_state(Form.violation)
+
+# 3. Отримуємо порушення -> запитуємо докази (текст або медіа)
+@dp.message(Form.violation)
+async def process_violation(message: types.Message, state: FSMContext):
+    await state.update_data(violation=message.text)
+    await message.answer("3. Надішліть докази (скріншот, відео або текст):")
+    await state.set_state(Form.proofs_text)
+
+# 4. Отримуємо докази -> запитуємо нік заявника (фінальний крок)
+@dp.message(Form.proofs_text)
+async def process_proofs(message: types.Message, state: FSMContext):
+    # Логіка збереження медіа, якщо воно є
+    if message.photo:
+        await state.update_data(proofs_type="photo", proofs_file=message.photo[-1].file_id, proofs_text="Фото-доказ")
+    elif message.video:
+        await state.update_data(proofs_type="video", proofs_file=message.video.file_id, proofs_text="Відео-доказ")
+    else:
+        await state.update_data(proofs_type="text", proofs_file=None, proofs_text=message.text)
+    
+    await message.answer("4. Введіть ваш ігровий нік (заявника):")
+    await state.set_state(Form.comp_user_nick)
+
+# 5. ФІНАЛ: Збираємо все докупи і відправляємо адмінам
 @dp.message(Form.comp_user_nick)
 async def comp_final(message: types.Message, state: FSMContext):
+    user_nick = message.text # Нік того, хто пише скаргу
     user_data = await state.get_data()
-    user_nick = message.text # Ник заявителя из последнего сообщения
     
     caption = (
-        f"📩 НОВА СКАРГА\n"
+        f"📩 **НОВА СКАРГА**\n"
         f"👤 Від: {message.from_user.mention_html()}\n\n"
-        f"1️⃣ Нік порушника: {user_data['target_nick']}\n"
-        f"2️⃣ Порушення: {user_data['violation']}\n"
-        f"3️⃣ Докази: {user_data['proofs_text']}\n"
-        f"4️⃣ Нік заявника: {user_nick}"
+        f"1️⃣ **Нік порушника:** {user_data.get('target_nick')}\n"
+        f"2️⃣ **Порушення:** {user_data.get('violation')}\n"
+        f"3️⃣ **Докази:** {user_data.get('proofs_text')}\n"
+        f"4️⃣ **Нік заявника:** {user_nick}"
     )
     
     kb = InlineKeyboardBuilder()
     kb.row(types.InlineKeyboardButton(text="✅ Прийняти", callback_data=f"adm_ok_{message.from_user.id}"))
     kb.row(types.InlineKeyboardButton(text="❌ Відхилити", callback_data=f"adm_no_{message.from_user.id}"))
     
-    # Логика отправки в зависимости от типа доказательств
     p_type = user_data.get("proofs_type")
     file_id = user_data.get("proofs_file")
 
@@ -287,9 +317,9 @@ async def comp_final(message: types.Message, state: FSMContext):
             await bot.send_message(GROUP_ID, caption, 
                                    message_thread_id=THREAD_ID, reply_markup=kb.as_markup(), parse_mode="HTML")
         
-        await message.answer("✅ Вашу скаргу з медіа-доказами надіслано!")
+        await message.answer("✅ Вашу скаргу надіслано на розгляд адміністрації!")
     except Exception as e:
-        await message.answer("❌ Помилка при відправці скарги. Спробуйте ще раз.")
+        await message.answer("❌ Помилка при відправці. Зверніться до підтримки.")
         print(f"Ошибка отправки: {e}")
 
     await state.clear()
