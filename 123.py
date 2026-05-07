@@ -377,7 +377,7 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
 @dp.message(commands=['donate'])
 async def donate_cmd(message: types.Message):
     text = (
-        "👋 **Бажаєте підтримати наш проект?**\n\n"
+        "👋 Бажаєте підтримати наш проект?\n\n"
         "Ваші донати допомагають нам розвивати сервер, "
         "покращувати хостинг та додавати новий контент!\n\n"
         "📌 Нік для підтримки(Роблокс): `SANTAFASD`\n"
