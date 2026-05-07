@@ -422,13 +422,20 @@ async def start_webserver():
     app.router.add_get("/", handle)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 10000)
+    
+    # КРИТИЧНО: Render автоматически назначает порт через переменную PORT
+    port = int(os.environ.get("PORT", 10000)) 
+    
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
+    print(f"Web server started on port {port}")
+
 async def main():
-    asyncio.create_task(start_webserver())
-    # Подключаемся к Supabase
+    # 1. Запускаем веб-сервер ПЕРВЫМ
+    await start_webserver()
+    
+    # 2. Подключаемся к базе и создаем таблицу
     conn = await asyncpg.connect(DB_URL)
-    # Создаем таблицу, если её нет
     await conn.execute('''
         CREATE TABLE IF NOT EXISTS bans (
             nick TEXT PRIMARY KEY,
@@ -439,7 +446,12 @@ async def main():
     ''')
     await conn.close()
     
-    # Дальше твой старый код запуска
     print("Бот запущен!")
+    
+    # 3. Запускаем лонг-поллинг
+    # Удаляем вебхуки на всякий случай перед запуском
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
+if __name__ == "__main__":
+    asyncio.run(main())
