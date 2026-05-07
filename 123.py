@@ -376,51 +376,53 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     await message.answer("3. Надішліть докази (фото, відео або посилання):")
     await state.set_state(Form.adm_comp_proofs)
     
-@dp.callback_query(F.data == "donate_menu")
-async def process_donate_press(callback: types.CallbackQuery):
-    # 1. МИТТЄВО прибираємо годинник з кнопки
-    await callback.answer()
+# 1. Обработка команды /start (Главное меню)
+@dp.message(Command("start"))
+async def start_command(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    # Твои старые кнопки (добавь их сюда так же)
+    builder.row(types.InlineKeyboardButton(text="🔍 Пошук RB", callback_data="search_rb"))
+    builder.row(types.InlineKeyboardButton(text="🚫 Перевірити бан", callback_data="check_ban"))
+    # Кнопка доната
+    builder.row(types.InlineKeyboardButton(text="💸 Підтримати проект", callback_data="donate_menu"))
     
-    # 2. Текст повідомлення
-    text = (
-        "Дякую за бажання підтримати проект! Є 2 способи підтримки:\n\n"
-        "🔹 **Через роблокс**, нік: `SANTAFASD`\n"
-        "🔹 **Через донаттело**: https://donatello.to/Kyiv_region"
-    )
-    
-    # 3. Кнопка Назад
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")]
-    ])
-    
-    # 4. Редагуємо повідомлення
-    try:
-        await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown", disable_web_page_preview=True)
-    except Exception:
-        # Якщо раптом текст не змінився, просто надсилаємо нове
-        await callback.message.answer(text, reply_markup=kb, parse_mode="Markdown")
-
-@dp.callback_query(F.data == "back_to_main")
-async def back_to_main_handler(callback: types.CallbackQuery):
-    await callback.answer() # Прибираємо годинник
-    
-    # Тут має бути твій початковий текст та клавіатура з /start
-    # Якщо у тебе кнопки старту лежать в окремій змінній (наприклад, main_kb), вкажи її тут
-    await callback.message.edit_text(
-        f"👋 Вітаємо!\nВаш ID: `{callback.from_user.id}`",
-        reply_markup=callback.message.reply_markup, # Це тимчасово поверне ті ж кнопки, заміни на свої!
+    await message.answer(
+        f"👋 Вітаємо!\nВаш ID: `{message.from_user.id}`",
+        reply_markup=builder.as_markup(),
         parse_mode="Markdown"
     )
 
-# Обробник для кнопки НАЗАД (повернення в старт)
-@dp.callback_query(F.data == "start_menu")
-async def back_to_start(callback: types.CallbackQuery):
-    # Тут виклич свою функцію стартового меню або просто відправ текст старту
-    # Наприклад:
-    await callback.message.edit_text(f"👋 Вітаємо!\nВаш ID: `{callback.from_user.id}`", 
-                                     reply_markup=get_start_keyboard(), # твоя функція з кнопками старту
-                                     parse_mode="Markdown")
+# 2. ОБРАБОТКА НАЖАТИЯ НА ДОНАТ
+@dp.callback_query(F.data == "donate_menu")
+async def process_donate_press(callback: types.CallbackQuery):
+    # Мгновенно отвечаем серверу Telegram, чтобы кнопка НЕ зависала
     await callback.answer()
+    
+    text = (
+        "Дякую за бажання підтримати проект! Є 2 способи підтримки:\n\n"
+        "🔹 Через роблокс, нік: `SANTAFASD`\n"
+        "🔹 Через донаттело: https://donatello.to/Kyiv_region"
+    )
+    
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main"))
+    
+    # Изменяем старое сообщение на текст про донат
+    await callback.message.edit_text(
+        text, 
+        reply_markup=builder.as_markup(), 
+        parse_mode="Markdown", 
+        disable_web_page_preview=True
+    )
+
+# 3. ОБРАБОТКА КНОПКИ НАЗАД
+@dp.callback_query(F.data == "back_to_main")
+async def back_to_main(callback: types.CallbackQuery):
+    await callback.answer()
+    # Просто вызываем функцию старта заново, чтобы вернуться в меню
+    await start_command(callback.message) 
+    # Удаляем старое сообщение, чтобы не было дублей
+    await callback.message.delete()
     
 @dp.message(Form.adm_comp_proofs)
 async def adm_comp_final(message: types.Message, state: FSMContext):
