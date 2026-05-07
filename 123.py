@@ -376,24 +376,34 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     await message.answer("3. Надішліть докази (фото, відео або посилання):")
     await state.set_state(Form.adm_comp_proofs)
     
-@dp.message(Command("donate"))
-async def donate_handler(message: types.Message):
-    # Створюємо кнопку-посилання
-    buttons = [
-        [types.InlineKeyboardButton(text="💸 Підтримати проект", url="https://donatello.to/Kyiv_region")]
-    ]
-    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
-
-    # Текст повідомлення
+@dp.callback_query(F.data == "donate_menu")
+async def process_donate_press(callback: types.CallbackQuery):
+    # Текст з двома способами
     text = (
-        "👋 **Бажаєте підтримати наш проект?**\n\n"
-        "Ваші внески допомагають нам ставати кращими!\n\n"
-        "📌 Нік для підтримки(Роблокс): `SANTAFASD` (натисни, щоб скопіювати)\n"
-        "🔗 Donatello: https://donatello.to/Kyiv_region\n\n"
-        "Дякуємо за допомогу! ❤️"
+        "Дякую за бажання підтримати проект! Є 2 способи підтримки:\n\n"
+        "🔹 Через роблокс, нік: `SANTAFASD`\n"
+        "🔹 Через донаттело*: https://donatello.to/Kyiv_region"
     )
+    
+    # Кнопка НАЗАД
+    nav_kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="start_menu")]
+    ])
+    
+    # Редагуємо поточне повідомлення (щоб не плодити нові)
+    await callback.message.edit_text(text, reply_markup=nav_kb, parse_mode="Markdown", disable_web_page_preview=True)
+    await callback.answer()
 
-    await message.answer(text, reply_markup=keyboard, parse_mode="Markdown")
+# Обробник для кнопки НАЗАД (повернення в старт)
+@dp.callback_query(F.data == "start_menu")
+async def back_to_start(callback: types.CallbackQuery):
+    # Тут виклич свою функцію стартового меню або просто відправ текст старту
+    # Наприклад:
+    await callback.message.edit_text(f"👋 Вітаємо!\nВаш ID: `{callback.from_user.id}`", 
+                                     reply_markup=get_start_keyboard(), # твоя функція з кнопками старту
+                                     parse_mode="Markdown")
+    await callback.answer()
+    
 @dp.message(Form.adm_comp_proofs)
 async def adm_comp_final(message: types.Message, state: FSMContext):
     data = await state.get_data()
