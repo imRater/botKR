@@ -14,7 +14,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 DB_URL = "postgresql://postgres.eihoehyavwdurhyrlxwq:221221poN!_123@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=disable"
 
-# --- КОНФИГУРАЦИЯ ---
+# --- КОНФИГУРАЦИЯ -
 TOKEN = os.getenv("BOT_TOKEN") # ЗАМЕНИ НА НОВЫЙ!
 GROUP_ID = -1003732391540
 THREAD_ID = 4122
