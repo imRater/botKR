@@ -206,7 +206,7 @@ async def check_start(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Form.check_nick)
     await callback.answer()
 
-@@dp.message(Form.check_nick)
+@dp.message(Form.check_nick)
 async def check_proc(message: types.Message, state: FSMContext):
     nick = message.text.lower().strip()
     try:
