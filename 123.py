@@ -289,45 +289,66 @@ async def final_step(message: types.Message, state: FSMContext):
     await state.clear() # ЗАВЕРШУЄМО
     
 # --- ЦЕПОЧКА АПЕЛЛЯЦІЇ ---
+# 1. Початок апеляції (натискання кнопки)
+@dp.callback_query(F.data == "btn_appeal")
+async def start_appeal(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear() # Скидаємо будь-які активні стани
+    await callback.message.answer("⚖️ **Апеляція**\n1. Де було видано покарання? (Роблокс або Телеграм):")
+    await state.set_state(Form.app_place)
+    await callback.answer()
+
+# 2. Отримуємо місце бану -> запитуємо нік
 @dp.message(Form.app_place)
-async def app_1(message: types.Message, state: FSMContext):
+async def process_app_place(message: types.Message, state: FSMContext):
     await state.update_data(place=message.text)
-    await message.answer("2. Ваш нік (якщо ТГ — поставте '-'):")
+    await message.answer("2. Введіть ваш ігровий нік (або Username у ТГ):")
     await state.set_state(Form.app_user_nick)
 
+# 3. Отримуємо нік -> запитуємо причину бану
 @dp.message(Form.app_user_nick)
-async def app_2(message: types.Message, state: FSMContext):
-    await state.update_data(nick=message.text)
-    await message.answer("3. За що вам було видано покарання?")
+async def process_app_nick(message: types.Message, state: FSMContext):
+    await state.update_data(user_nick=message.text)
+    await message.answer("3. Вкажіть причину покарання (якщо знаєте):")
     await state.set_state(Form.app_reason)
 
+# 4. Отримуємо причину -> запитуємо чому треба розбанити
 @dp.message(Form.app_reason)
-async def app_3(message: types.Message, state: FSMContext):
+async def process_app_reason(message: types.Message, state: FSMContext):
     await state.update_data(reason=message.text)
-    await message.answer("4. Чому ми повинні вас розблокувати/розмутити?")
+    await message.answer("4. Чому ми маємо вас розблокувати? (Ваші аргументи):")
     await state.set_state(Form.app_why_unban)
 
+# 5. ФІНАЛ: Відправка апеляції адмінам
 @dp.message(Form.app_why_unban)
-async def app_final(message: types.Message, state: FSMContext):
+async def process_app_final(message: types.Message, state: FSMContext):
+    await state.update_data(why_unban=message.text)
     user_data = await state.get_data()
     
     caption = (
-        f"⚖️ НОВА АПЕЛЯЦІЯ\n"
+        f"⚖️ **НОВА АПЕЛЯЦІЯ**\n"
         f"👤 Від: {message.from_user.mention_html()}\n\n"
-        f"1️⃣ Місце: {user_data['place']}\n"
-        f"2️⃣ Нік: {user_data['nick']}\n"
-        f"3️⃣ Причина бана: {user_data['reason']}\n"
-        f"4️⃣ Чому розбанити: {message.text}"
+        f"📍 **Місце:** {user_data.get('place')}\n"
+        f"👤 **Нік:** {user_data.get('user_nick')}\n"
+        f"📝 **Причина бану:** {user_data.get('reason')}\n"
+        f"💡 **Аргументи:** {user_data.get('why_unban')}"
     )
     
     kb = InlineKeyboardBuilder()
-    kb.row(types.InlineKeyboardButton(text="✅ Прийняти", callback_data=f"adm_ok_{message.from_user.id}"))
-    kb.row(types.InlineKeyboardButton(text="❌ Відхилити", callback_data=f"adm_no_{message.from_user.id}"))
-    
-    await bot.send_message(GROUP_ID, caption, message_thread_id=THREAD_ID, reply_markup=kb.as_markup(), parse_mode="HTML")
-    await message.answer("✅ Вашу апеляцію надіслано адміністрації!")
-    await state.clear()
+    kb.row(types.InlineKeyboardButton(text="✅ Розбанити", callback_data=f"adm_unban_{message.from_user.id}"))
+    kb.row(types.InlineKeyboardButton(text="❌ Відмовити", callback_data=f"adm_no_app_{message.from_user.id}"))
 
+    try:
+        # Відправка в адмін-групу
+        await bot.send_message(GROUP_ID, caption, message_thread_id=THREAD_ID, 
+                               reply_markup=kb.as_markup(), parse_mode="HTML")
+        
+        await message.answer("✅ Вашу апеляцію надіслано! Очікуйте на рішення адміністрації.")
+    except Exception as e:
+        await message.answer("❌ Помилка при відправці апеляції.")
+        print(f"Error: {e}")
+
+    await state.clear()
+    
 # --- ВЕРДИКТ АДМИНА (ИСПРАВЛЕН ФИЛЬТР) ---
 @dp.callback_query(F.data.startswith("adm_ok_") | F.data.startswith("adm_no_"))
 async def adm_decision(callback: types.CallbackQuery, state: FSMContext):
