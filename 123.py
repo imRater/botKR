@@ -1,4 +1,5 @@
 import asyncio
+import os
 import asyncpg
 import re
 import aiohttp
@@ -13,7 +14,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 DB_URL = "postgresql://postgres:221221poN!_123@db.eihoehyavwdurhyrlxwq.supabase.co:5432/postgres"
 
 # --- КОНФИГУРАЦИЯ ---
-TOKEN = "8625587031:AAG7BBNB4eYIlJg7qGIH_joClCvvCJu7iBM" # ЗАМЕНИ НА НОВЫЙ!
+TOKEN = os.getenv("BOT_TOKEN") # ЗАМЕНИ НА НОВЫЙ!
 GROUP_ID = -1003732391540
 THREAD_ID = 4122
 ADMINS = [7848102369, 7516819824, 7009639495, 801666895, 5757255404, 5114472835, 8635156198, 6218212222, 8043402907]
