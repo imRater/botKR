@@ -378,21 +378,39 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     
 @dp.callback_query(F.data == "donate_menu")
 async def process_donate_press(callback: types.CallbackQuery):
-    # Текст з двома способами
+    # 1. МИТТЄВО прибираємо годинник з кнопки
+    await callback.answer()
+    
+    # 2. Текст повідомлення
     text = (
         "Дякую за бажання підтримати проект! Є 2 способи підтримки:\n\n"
-        "🔹 Через роблокс, нік: `SANTAFASD`\n"
-        "🔹 Через донаттело*: https://donatello.to/Kyiv_region"
+        "🔹 **Через роблокс**, нік: `SANTAFASD`\n"
+        "🔹 **Через донаттело**: https://donatello.to/Kyiv_region"
     )
     
-    # Кнопка НАЗАД
-    nav_kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="start_menu")]
+    # 3. Кнопка Назад
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")]
     ])
     
-    # Редагуємо поточне повідомлення (щоб не плодити нові)
-    await callback.message.edit_text(text, reply_markup=nav_kb, parse_mode="Markdown", disable_web_page_preview=True)
-    await callback.answer()
+    # 4. Редагуємо повідомлення
+    try:
+        await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown", disable_web_page_preview=True)
+    except Exception:
+        # Якщо раптом текст не змінився, просто надсилаємо нове
+        await callback.message.answer(text, reply_markup=kb, parse_mode="Markdown")
+
+@dp.callback_query(F.data == "back_to_main")
+async def back_to_main_handler(callback: types.CallbackQuery):
+    await callback.answer() # Прибираємо годинник
+    
+    # Тут має бути твій початковий текст та клавіатура з /start
+    # Якщо у тебе кнопки старту лежать в окремій змінній (наприклад, main_kb), вкажи її тут
+    await callback.message.edit_text(
+        f"👋 Вітаємо!\nВаш ID: `{callback.from_user.id}`",
+        reply_markup=callback.message.reply_markup, # Це тимчасово поверне ті ж кнопки, заміни на свої!
+        parse_mode="Markdown"
+    )
 
 # Обробник для кнопки НАЗАД (повернення в старт)
 @dp.callback_query(F.data == "start_menu")
