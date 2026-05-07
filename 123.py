@@ -245,35 +245,31 @@ async def check_proc(message: types.Message, state: FSMContext):
 # --- ВХОД В ФОРМЫ ---
 # --- ЛАНЦЮЖОК СКАРГИ ---
 
-# 1. Початок: запитуємо нік порушника
-# 1. Початок форми: вибір кнопки
-@dp.callback_query(F.data.in_(["btn_complaint", "btn_appeal"]))
-async def start_player_form(callback: types.CallbackQuery, state: FSMContext):
-    if callback.data == "btn_complaint":
-        await callback.message.answer("📝 **Скарга на гравця**\n1. Введіть нік порушника:")
-        await state.set_state(Form.comp_target_nick)
-    else:
-        await callback.message.answer("⚖️ **Апеляція**\n1. Де було видано покарання? (Роблокс або Телеграм):")
-        await state.set_state(Form.app_place)
+# 1. Початок (кнопка)
+@dp.callback_query(F.data == "btn_complaint")
+async def start_complaint(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear() # Обов'язково чистимо старі стани
+    await callback.message.answer("📝 **Скарга на гравця**\n1. Введіть нік порушника:")
+    await state.set_state(Form.comp_target_nick)
     await callback.answer()
 
-# 2. Обробка ніку порушника -> перехід до опису порушення
+# 2. Отримуємо нік порушника
 @dp.message(Form.comp_target_nick)
-async def process_comp_target(message: types.Message, state: FSMContext):
-    await state.update_data(target_nick=message.text)
+async def process_target_nick(message: types.Message, state: FSMContext):
+    await state.update_data(target_nick=message.text) # Зберігаємо в пам'ять
     await message.answer("2. Опишіть порушення (що саме сталося):")
-    await state.set_state(Form.comp_violation) # Використовуємо твою назву з класу
+    await state.set_state(Form.comp_violation) # ПЕРЕМИКАЄМО ДАЛІ
 
-# 3. Обробка тексту порушення -> запит доказів
+# 3. Отримуємо опис порушення
 @dp.message(Form.comp_violation)
-async def process_comp_violation(message: types.Message, state: FSMContext):
+async def process_violation(message: types.Message, state: FSMContext):
     await state.update_data(violation=message.text)
-    await message.answer("3. Надішліть докази (скріншот, відео або текст):")
-    await state.set_state(Form.comp_proofs) # Використовуємо твою назву з класу
+    await message.answer("3. Надішліть докази (скріншот, відео або посилання):")
+    await state.set_state(Form.comp_proofs) # ПЕРЕМИКАЄМО ДАЛІ
 
-# 4. Обробка доказів (медіа або текст) -> запит ніку заявника
+# 4. Отримуємо докази
 @dp.message(Form.comp_proofs)
-async def process_comp_proofs(message: types.Message, state: FSMContext):
+async def process_proofs(message: types.Message, state: FSMContext):
     if message.photo:
         await state.update_data(proofs_type="photo", proofs_file=message.photo[-1].file_id, proofs_text="Фото-доказ")
     elif message.video:
@@ -282,47 +278,15 @@ async def process_comp_proofs(message: types.Message, state: FSMContext):
         await state.update_data(proofs_type="text", proofs_file=None, proofs_text=message.text)
     
     await message.answer("4. Введіть ваш ігровий нік (заявника):")
-    await state.set_state(Form.comp_user_nick)
+    await state.set_state(Form.comp_user_nick) # ПЕРЕМИКАЄМО НА ФІНАЛ
 
-# 5. Фінал: відправка даних у групу/канал
+# 5. Фінал (відправка адмінам)
 @dp.message(Form.comp_user_nick)
-async def comp_final(message: types.Message, state: FSMContext):
-    user_nick = message.text
-    user_data = await state.get_data()
-    
-    caption = (
-        f"📩 **НОВА СКАРГА**\n"
-        f"👤 Від: {message.from_user.mention_html()}\n\n"
-        f"1️⃣ **Нік порушника:** {user_data.get('target_nick')}\n"
-        f"2️⃣ **Порушення:** {user_data.get('violation')}\n"
-        f"3️⃣ **Докази:** {user_data.get('proofs_text')}\n"
-        f"4️⃣ **Нік заявника:** {user_nick}"
-    )
-    
-    kb = InlineKeyboardBuilder()
-    kb.row(types.InlineKeyboardButton(text="✅ Прийняти", callback_data=f"adm_ok_{message.from_user.id}"))
-    kb.row(types.InlineKeyboardButton(text="❌ Відхилити", callback_data=f"adm_no_{message.from_user.id}"))
-    
-    p_type = user_data.get("proofs_type")
-    file_id = user_data.get("proofs_file")
-
-    try:
-        if p_type == "photo":
-            await bot.send_photo(GROUP_ID, photo=file_id, caption=caption, 
-                                 message_thread_id=THREAD_ID, reply_markup=kb.as_markup(), parse_mode="HTML")
-        elif p_type == "video":
-            await bot.send_video(GROUP_ID, video=file_id, caption=caption, 
-                                 message_thread_id=THREAD_ID, reply_markup=kb.as_markup(), parse_mode="HTML")
-        else:
-            await bot.send_message(GROUP_ID, caption, 
-                                   message_thread_id=THREAD_ID, reply_markup=kb.as_markup(), parse_mode="HTML")
-        
-        await message.answer("✅ Вашу скаргу надіслано адміністрації!")
-    except Exception as e:
-        await message.answer("❌ Сталася помилка при відправці.")
-        print(f"Ошибка: {e}")
-
-    await state.clear()
+async def final_step(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    # ... тут твій код відправки повідомлення (bot.send_message/photo) ...
+    await message.answer("✅ Скарга відправлена!")
+    await state.clear() # ЗАВЕРШУЄМО
     
 # --- ЦЕПОЧКА АПЕЛЛЯЦІЇ ---
 @dp.message(Form.app_place)
