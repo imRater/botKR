@@ -151,11 +151,11 @@ async def ban_3(message: types.Message, state: FSMContext):
 async def ban_4(message: types.Message, state: FSMContext):
     d = await state.get_data()
     reason_text = message.text
-    admin_name = message.from_user.username or "Unknown"
+    admin_name = message.from_user.username or str(message.from_user.id)
     
     try:
         conn = await asyncpg.connect(DB_URL)
-        # Явно указываем колонки (nick, expiry, reason, admin)
+        # Указываем колонки (nick, expiry, reason, admin) точно как в базе
         await conn.execute("""
             INSERT INTO bans (nick, expiry, reason, admin) 
             VALUES ($1, $2, $3, $4) 
@@ -164,10 +164,10 @@ async def ban_4(message: types.Message, state: FSMContext):
         """, d['n'], d['t'], reason_text, admin_name)
         
         await conn.close()
-        await message.answer(f"✅ Користувач {d['n']} успішно забанений.", reply_markup=main_kb(message.from_user.id))
+        await message.answer(f"✅ Користувач {d['n']} забанений.", reply_markup=main_kb(message.from_user.id))
     except Exception as e:
-        print(f"Ошибка записи бана: {e}")
-        await message.answer("❌ Не вдалося зберегти бан в базі.")
+        print(f"ОШИБКА БАЗЫ: {e}")
+        await message.answer(f"❌ Ошибка при записи в базу: {e}")
         
     await state.clear()
 
@@ -434,12 +434,12 @@ async def back_to_main(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     uid = callback.from_user.id
     await callback.message.edit_text(f"👋 Вітаємо!\nВаш ID: `{uid}`", 
-                                     reply_markup=main_kb(uid), 
+                                 reply_markup=main_kb(uid), 
                                      parse_mode="Markdown")
 async def handle(request):
     return web.Response(text="Bot is running")
 
-async def start_webserver():
+async def start_webserver():    
     app = web.Application()
     app.router.add_get("/", handle)
     runner = web.AppRunner(app)
