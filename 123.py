@@ -3,6 +3,7 @@ import os
 import asyncpg
 import re
 import aiohttp
+from aiohttp import web
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
@@ -405,7 +406,19 @@ async def back_to_main(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(f"👋 Вітаємо!\nВаш ID: `{uid}`", 
                                      reply_markup=main_kb(uid), 
                                      parse_mode="Markdown")
-async def main():
+    async def handle(request):
+    return web.Response(text="Bot is running")
+
+async def start_webserver():
+    app = web.Application()
+    app.router.add_get("/", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 10000)
+    await site.start()
+    
+async def main():|
+    asyncio.create_task(start_webserver())
     # Подключаемся к Supabase
     conn = await asyncpg.connect(DB_URL)
     # Создаем таблицу, если её нет
