@@ -416,8 +416,7 @@ async def start_webserver():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', 10000)
     await site.start()
-    
-async def main():|
+async def main():
     asyncio.create_task(start_webserver())
     # Подключаемся к Supabase
     conn = await asyncpg.connect(DB_URL)
@@ -435,3 +434,4 @@ async def main():|
     # Дальше твой старый код запуска
     print("Бот запущен!")
     await dp.start_polling(bot)
+
