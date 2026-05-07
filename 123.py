@@ -406,7 +406,7 @@ async def back_to_main(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(f"👋 Вітаємо!\nВаш ID: `{uid}`", 
                                      reply_markup=main_kb(uid), 
                                      parse_mode="Markdown")
-    async def handle(request):
+async def handle(request):
     return web.Response(text="Bot is running")
 
 async def start_webserver():
