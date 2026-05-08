@@ -394,7 +394,8 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     
 # 1. ОСНОВНЕ МЕНЮ (винесено окремо, щоб не дублювати код)
 async def get_main_menu(user_id: int):
-    builder = InlineKeyboardBuilder()
+    uilder = InlineKeyboardBuilder()
+    # Новая кнопка
     builder.row(types.InlineKeyboardButton(text="📖 Як використовувати бота", callback_data="btn_guide"))
     
     builder.row(types.InlineKeyboardButton(text="🔍 Пошук RB", callback_data="btn_search"))
@@ -403,7 +404,7 @@ async def get_main_menu(user_id: int):
     builder.row(types.InlineKeyboardButton(text="⚖️ Апеляція", callback_data="btn_appeal"))
     builder.row(types.InlineKeyboardButton(text="👨‍✈️ Скарга на адміна", callback_data="btn_adm_complaint"))
     builder.row(types.InlineKeyboardButton(text="💸 Підтримати проект (Донат)", callback_data="donate_menu"))
-
+    
     if user_id in ADMINS:
         builder.row(types.InlineKeyboardButton(text="🔨 Бан", callback_data="admin_ban"))
         builder.row(types.InlineKeyboardButton(text="🔓 Розбан", callback_data="admin_unban"))
