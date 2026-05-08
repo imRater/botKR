@@ -393,11 +393,11 @@ async def adm_comp_2(message: types.Message, state: FSMContext):
     await state.set_state(Form.adm_comp_proofs)
     
 # 1. ОСНОВНЕ МЕНЮ (винесено окремо, щоб не дублювати код)
+# 1. ОСНОВНЕ МЕНЮ (виправлено)
 async def get_main_menu(user_id: int):
-    uilder = InlineKeyboardBuilder()
-    # Новая кнопка
-    builder.row(types.InlineKeyboardButton(text="📖 Як використовувати бота", callback_data="btn_guide"))
+    builder = InlineKeyboardBuilder() # тут була опечатка "uilder"
     
+    builder.row(types.InlineKeyboardButton(text="📖 Як використовувати бота", callback_data="btn_guide"))
     builder.row(types.InlineKeyboardButton(text="🔍 Пошук RB", callback_data="btn_search"))
     builder.row(types.InlineKeyboardButton(text="🚫 Перевірити бан", callback_data="btn_check_ban"))
     builder.row(types.InlineKeyboardButton(text="📝 Скарга на гравця", callback_data="btn_complaint"))
@@ -408,11 +408,13 @@ async def get_main_menu(user_id: int):
     if user_id in ADMINS:
         builder.row(types.InlineKeyboardButton(text="🔨 Бан", callback_data="admin_ban"))
         builder.row(types.InlineKeyboardButton(text="🔓 Розбан", callback_data="admin_unban"))
-    return builder.as_markup()
 
+    # Текст створюємо ПЕРЕД тим, як щось повертати
     text = f"👋 Вітаємо!\nВаш ID: `{user_id}`"
+    
+    # Повертаємо ОДИН РАЗ обидва значення
     return text, builder.as_markup()
-
+    
 @dp.message(Command("start"))
 async def start_command(message: types.Message):
     text, reply_markup = await get_main_menu(message.from_user.id)
