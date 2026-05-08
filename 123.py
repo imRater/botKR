@@ -403,7 +403,12 @@ async def get_main_menu(user_id: int):
     builder.row(types.InlineKeyboardButton(text="⚖️ Апеляція", callback_data="btn_appeal"))
     builder.row(types.InlineKeyboardButton(text="👨‍✈️ Скарга на адміна", callback_data="btn_adm_complaint"))
     builder.row(types.InlineKeyboardButton(text="💸 Підтримати проект (Донат)", callback_data="donate_menu"))
-    
+
+     if user_id in ADMINS:
+        builder.row(types.InlineKeyboardButton(text="🔨 Бан", callback_data="admin_ban"))
+        builder.row(types.InlineKeyboardButton(text="🔓 Розбан", callback_data="admin_unban"))
+    return builder.as_markup()
+
     text = f"👋 Вітаємо!\nВаш ID: `{user_id}`"
     return text, builder.as_markup()
 
